@@ -984,11 +984,15 @@
         unlockBtn.disabled = true;
         guestBtn.disabled = true;
         try {
-          const resp = await fetch(SECRET_FILE_URL, { cache: 'no-store' });
-          if (!resp.ok) {
-            throw new Error(`获取 secret.private 失败，HTTP ${resp.status}`);
+          const localPayload = loadLocalSecretPayload();
+          let payload = localPayload;
+          if (!payload) {
+            const resp = await fetch(SECRET_FILE_URL, { cache: 'no-store' });
+            if (!resp.ok) {
+              throw new Error(`获取 secret.private 失败，HTTP ${resp.status}`);
+            }
+            payload = await resp.json();
           }
-          const payload = await resp.json();
           const secret = await decryptSecret(pwd, payload);
           // 将解密后的配置保存在内存中，不落盘，同时记住密码以便下次自动解锁
           window.decoded_secret_private = secret;
@@ -1024,24 +1028,12 @@
         window.decoded_secret_private && typeof window.decoded_secret_private === 'object'
           ? window.decoded_secret_private
           : {};
-      const currentProviderType = inferProviderType(currentSecret);
       const currentSummaryLLM = resolveSummaryLLM(currentSecret) || {};
       const currentChatEntry =
         Array.isArray(currentSecret.chatLLMs) && currentSecret.chatLLMs.length
           ? currentSecret.chatLLMs[0] || {}
           : {};
       const currentReranker = resolveRerankerConfig(currentSecret);
-      const defaultPlatoModels = getDefaultPlatoChatModels();
-      const platoSummaryModels = [
-        {
-          value: 'deepseek-chat',
-          label: 'DeepSeek Chat · 默认推荐',
-        },
-        {
-          value: 'deepseek-reasoner',
-          label: 'DeepSeek Reasoner · 推理模型',
-        },
-      ];
 
       const initialGithubToken = normalizeText(
         currentSecret.github && currentSecret.github.token,
@@ -1049,6 +1041,14 @@
       const initialApiKey = normalizeText(currentSummaryLLM.apiKey || '');
       const initialDeepSeekModel =
         normalizeText(currentSummaryLLM.model || '') || 'deepseek-chat';
+      const deepseekSummaryModels = getDefaultDeepSeekChatModels().map((model) => ({
+        value: model,
+        label: model === 'deepseek-chat'
+          ? 'DeepSeek Chat · 默认推荐'
+          : model === 'deepseek-reasoner'
+            ? 'DeepSeek Reasoner · 推理模型'
+            : model,
+      }));
 
       modal.innerHTML = `
         <h2 style="margin-top:0;">🛡️ 新配置指引 · 第二步</h2>
@@ -1265,6 +1265,11 @@
         document.querySelectorAll('input[name="secret-setup-provider"]'),
       );
       const deepseekSection = document.getElementById('secret-setup-deepseek-section');
+      const deepseekInput = document.getElementById('secret-setup-deepseek');
+      const deepseekVerifyBtn = document.getElementById('secret-setup-deepseek-verify');
+      const deepseekTestBtn = document.getElementById('secret-setup-deepseek-test');
+      const deepseekStatusEl = document.getElementById('secret-setup-deepseek-status');
+      const deepseekModelSelect = document.getElementById('secret-setup-deepseek-model-select');
       const customSection = document.getElementById('secret-setup-custom-section');
       const platoInput = document.getElementById('secret-setup-plato');
       const platoVerifyBtn = document.getElementById('secret-setup-plato-verify');
@@ -1300,13 +1305,11 @@
         !githubStatusEl ||
         !providerInputs.length ||
         !deepseekSection ||
-        !customSection ||
-        !platoInput ||
-        !platoVerifyBtn ||
-        !platoTestBtn ||
-        !platoStatusEl ||
-        !platoModelsWrap ||
-        !platoModelSelect ||
+        !deepseekInput ||
+        !deepseekVerifyBtn ||
+        !deepseekTestBtn ||
+        !deepseekStatusEl ||
+        !deepseekModelSelect ||
         !customApiKeyInput ||
         !customBaseUrlInput ||
         !customModel1Input ||
@@ -1340,7 +1343,7 @@
       deepseekInput.value = initialApiKey;
 
       providerInputs.forEach((input) => {
-        input.checked = input.value === currentProviderType;
+        input.checked = input.value === 'deepseek';
       });
       deepseekModelSelect.value = initialDeepSeekModel || 'deepseek-chat';
       if (!deepseekModelSelect.value) {
@@ -1396,7 +1399,9 @@
       };
       const syncProviderSections = () => {
         deepseekSection.style.display = 'block';
-        customSection.style.display = 'none';
+        if (customSection) {
+          customSection.style.display = 'none';
+        }
       };
 
       const resetGithubStatus = () => {
@@ -1443,9 +1448,6 @@
       const collectProviderDraft = () => {
         const apiKey = normalizeText(deepseekInput.value);
         const model = selectedDeepSeekModel();
-        const rerankerProfile = selectedRerankerProfile();
-        const rerankerApiKey = normalizeText(rerankerApiKeyInput.value || '');
-        const rerankerBaseUrl = normalizeBaseUrlForStorage(rerankerBaseUrlInput.value || rerankerProfile.baseUrl || '');
         if (!apiKey) {
           throw new Error('请先输入 DeepSeek API Key。');
         }
@@ -1453,19 +1455,6 @@
           throw new Error('请选择用于工作流总结的大模型。');
         }
         const reranker = buildRerankerDraft(apiKey, getDefaultPlatoBaseUrl());
-        if (provider === 'plato') {
-          return {
-            providerType: 'plato',
-            summaryApiKey: apiKey,
-            summaryBaseUrl: getDefaultPlatoBaseUrl(),
-            summaryModel: model,
-            chatModels: defaultPlatoModels,
-            rewriteModel: 'gemini-3-flash-preview',
-            filterModel: 'gemini-3-flash-preview-nothinking',
-            skipRerank: false,
-            reranker,
-          };
-        }
         return {
           providerType: 'deepseek',
           summaryApiKey: apiKey,
@@ -1515,11 +1504,7 @@
       syncRerankerFields();
 
       bindResetOnInput([githubInput], resetGithubStatus);
-      bindResetOnInput([platoInput, platoModelSelect], resetPlatoStatus);
-      bindResetOnInput(
-        [customApiKeyInput, customBaseUrlInput, customModel1Input, customModel2Input, customModel3Input],
-        resetCustomStatus,
-      );
+      bindResetOnInput([deepseekInput, deepseekModelSelect], resetDeepSeekStatus);
       rerankerProfileSelect.addEventListener('change', syncRerankerFields);
       providerInputs.forEach((input) => {
         input.addEventListener('change', () => {
@@ -1960,10 +1945,10 @@
           const savedPwd = loadSavedPassword();
           if (savedPwd) {
             try {
-              const resp2 = await fetch(SECRET_FILE_URL, {
-                cache: 'no-store',
-              });
               const payload = localPayload || (await (async () => {
+                const resp2 = await fetch(SECRET_FILE_URL, {
+                  cache: 'no-store',
+                });
                 if (!resp2.ok) {
                   throw new Error(
                     `获取 secret.private 失败，HTTP ${resp2.status}`,
