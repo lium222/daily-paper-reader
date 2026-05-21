@@ -1124,69 +1124,14 @@
               <input type="radio" name="secret-setup-provider" value="deepseek" checked style="display:none;" />
             </div>
 
-            <div id="secret-setup-custom-section" class="secret-setup-step2-block">
-              <div class="secret-setup-step2-title">OpenAI-compatible 聊天配置</div>
-              <p class="secret-setup-step2-note">
-                预设会自动填写 <code>Base URL</code> 与推荐模型；API Key 仍需你自行输入。这里的模型仅供聊天区使用。
-              </p>
-              <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:6px;">
-                <button id="secret-setup-preset-deepseek" type="button" class="secret-gate-btn secondary">
-                  填入 DeepSeek 预设
-                </button>
-                <button id="secret-setup-preset-glm" type="button" class="secret-gate-btn secondary">
-                  填入 GLM 预设
-                </button>
-                <button id="secret-setup-preset-minimax" type="button" class="secret-gate-btn secondary">
-                  填入 MiniMax 预设
-                </button>
-                <button id="secret-setup-preset-kimi" type="button" class="secret-gate-btn secondary">
-                  填入 Kimi 预设
-                </button>
-                <button id="secret-setup-preset-openai" type="button" class="secret-gate-btn secondary">
-                  填入 OpenAI 预设
-                </button>
-              </div>
-              <input
-                id="secret-setup-custom-api-key"
-                type="password"
-                autocomplete="off"
-                placeholder="聊天 API Key"
-                style="width:100%; box-sizing:border-box; padding:6px 8px; margin-bottom:4px; font-size:13px;"
-              />
-              <input
-                id="secret-setup-custom-base-url"
-                type="text"
-                autocomplete="off"
-                placeholder="聊天 Base URL，例如 https://api.openai.com/v1"
-                style="width:100%; box-sizing:border-box; padding:6px 8px; margin-bottom:4px; font-size:13px;"
-              />
-              <input
-                id="secret-setup-custom-model-1"
-                type="text"
-                autocomplete="off"
-                placeholder="聊天模型 1（默认）"
-                style="width:100%; box-sizing:border-box; padding:6px 8px; margin-bottom:4px; font-size:13px;"
-              />
-              <input
-                id="secret-setup-custom-model-2"
-                type="text"
-                autocomplete="off"
-                placeholder="聊天模型 2（可选）"
-                style="width:100%; box-sizing:border-box; padding:6px 8px; margin-bottom:4px; font-size:13px;"
-              />
-              <input
-                id="secret-setup-custom-model-3"
-                type="text"
-                autocomplete="off"
-                placeholder="聊天模型 3（可选）"
-                style="width:100%; box-sizing:border-box; padding:6px 8px; margin-bottom:4px; font-size:13px;"
-              />
-              <button id="secret-setup-custom-test" type="button" class="secret-gate-btn secondary secret-setup-step2-actions">
-                测试当前配置
-              </button>
-              <div id="secret-setup-custom-status" style="min-height:18px; font-size:12px; color:#999; margin-top:6px;">
-                将依次用已填写聊天模型发送 <code>hello world</code>，检查接口与模型是否可用。
-              </div>
+            <div id="secret-setup-custom-section" style="display:none;">
+              <input id="secret-setup-custom-api-key" type="hidden" />
+              <input id="secret-setup-custom-base-url" type="hidden" />
+              <input id="secret-setup-custom-model-1" type="hidden" />
+              <input id="secret-setup-custom-model-2" type="hidden" />
+              <input id="secret-setup-custom-model-3" type="hidden" />
+              <button id="secret-setup-custom-test" type="button" style="display:none;"></button>
+              <div id="secret-setup-custom-status" style="display:none;"></div>
             </div>
           </div>
         </div>
@@ -1219,11 +1164,6 @@
       const deepseekTestBtn = document.getElementById('secret-setup-deepseek-test');
       const deepseekStatusEl = document.getElementById('secret-setup-deepseek-status');
       const deepseekModelSelect = document.getElementById('secret-setup-deepseek-model-select');
-      const deepseekPresetBtn = document.getElementById('secret-setup-preset-deepseek');
-      const glmPresetBtn = document.getElementById('secret-setup-preset-glm');
-      const minimaxPresetBtn = document.getElementById('secret-setup-preset-minimax');
-      const kimiPresetBtn = document.getElementById('secret-setup-preset-kimi');
-      const openaiPresetBtn = document.getElementById('secret-setup-preset-openai');
       const customApiKeyInput = document.getElementById('secret-setup-custom-api-key');
       const customBaseUrlInput = document.getElementById('secret-setup-custom-base-url');
       const customModel1Input = document.getElementById('secret-setup-custom-model-1');
@@ -1254,11 +1194,6 @@
         !deepseekTestBtn ||
         !deepseekStatusEl ||
         !deepseekModelSelect ||
-        !deepseekPresetBtn ||
-        !glmPresetBtn ||
-        !minimaxPresetBtn ||
-        !kimiPresetBtn ||
-        !openaiPresetBtn ||
         !customApiKeyInput ||
         !customBaseUrlInput ||
         !customModel1Input ||
@@ -1368,39 +1303,6 @@
         rerankerTestStatusEl.textContent = '将发送一次最小 rerank 请求验证 API Key、Base URL 与模型是否可用。';
         rerankerTestStatusEl.style.color = '#999';
       };
-      const customPresetMap = {
-        deepseek: {
-          baseUrl: 'https://api.deepseek.com',
-          models: ['deepseek-v4-flash', 'deepseek-v4-pro'],
-        },
-        glm: {
-          baseUrl: 'https://open.bigmodel.cn/api/paas/v4',
-          models: ['glm-4.5', 'glm-4.5-air', 'glm-4-flash'],
-        },
-        minimax: {
-          baseUrl: 'https://api.minimax.chat/v1',
-          models: ['MiniMax-M1', 'MiniMax-Text-01'],
-        },
-        kimi: {
-          baseUrl: 'https://api.moonshot.cn/v1',
-          models: ['kimi-k2-0711-preview', 'moonshot-v1-8k', 'moonshot-v1-32k'],
-        },
-        openai: {
-          baseUrl: 'https://api.openai.com/v1',
-          models: ['gpt-4.1', 'gpt-4.1-mini', 'gpt-4o-mini'],
-        },
-      };
-      const applyCustomPreset = (presetKey) => {
-        const preset = customPresetMap[presetKey];
-        if (!preset) return;
-        customBaseUrlInput.value = preset.baseUrl || '';
-        customModel1Input.value = preset.models[0] || '';
-        customModel2Input.value = preset.models[1] || '';
-        customModel3Input.value = preset.models[2] || '';
-        customStatusEl.textContent = '已填入预设；请补充聊天 API Key 后点击“测试当前配置”。';
-        customStatusEl.style.color = '#666';
-      };
-
       const buildRerankerDraft = (fallbackApiKey, fallbackBaseUrl) => {
         const profile = selectedRerankerProfile();
         const typedApiKey = normalizeText(rerankerApiKeyInput.value || '');
@@ -1501,11 +1403,6 @@
       bindResetOnInput([rerankerApiKeyInput, rerankerBaseUrlInput], resetRerankerTestStatus);
       rerankerProfileSelect.addEventListener('change', syncRerankerFields);
       rerankerProfileSelect.addEventListener('change', resetRerankerTestStatus);
-      deepseekPresetBtn.addEventListener('click', () => applyCustomPreset('deepseek'));
-      glmPresetBtn.addEventListener('click', () => applyCustomPreset('glm'));
-      minimaxPresetBtn.addEventListener('click', () => applyCustomPreset('minimax'));
-      kimiPresetBtn.addEventListener('click', () => applyCustomPreset('kimi'));
-      openaiPresetBtn.addEventListener('click', () => applyCustomPreset('openai'));
       rerankerTestBtn.addEventListener('click', async () => {
         let draft = null;
         try {
