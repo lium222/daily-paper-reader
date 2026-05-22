@@ -891,10 +891,10 @@ window.SubscriptionsSmartQuery = (function () {
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 120000);
-    const requestPayload = ({ useResponseFormat = true } = {}) => {
-      const payload = {
-        model: llm.model,
-        messages: [
+	    const requestPayload = ({ useResponseFormat = true } = {}) => {
+	      const payload = {
+	        model: llm.model,
+	        messages: [
           {
             role: 'system',
             content:
@@ -902,12 +902,22 @@ window.SubscriptionsSmartQuery = (function () {
               + 'The response must be fully based on the current user input and must not reference prior conversation history.',
           },
           { role: 'user', content: prompt },
-        ],
-        temperature: 0.1,
-      };
-      if (useResponseFormat && jsonResponseMode === 'json_object') {
-        payload.response_format = { type: 'json_object' };
-      }
+	        ],
+	        temperature: 0.1,
+	      };
+	      const utils = window.DPRLLMConfigUtils || {};
+	      if (typeof utils.resolveMaxOutputTokens === 'function') {
+	        const maxTokens = utils.resolveMaxOutputTokens({
+	          baseUrl: llm.baseUrl,
+	          model: llm.model,
+	        });
+	        if (maxTokens) {
+	          payload.max_tokens = maxTokens;
+	        }
+	      }
+	      if (useResponseFormat && jsonResponseMode === 'json_object') {
+	        payload.response_format = { type: 'json_object' };
+	      }
       return payload;
     };
 
