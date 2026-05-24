@@ -1885,6 +1885,37 @@ window.$docsify = {
           return String(value || '').trim().toLowerCase().replace(/\s+/g, '-');
         };
 
+        const getElementDepth = (el) => {
+          let depth = 0;
+          let current = el;
+          while (current && current.parentElement) {
+            depth += 1;
+            current = current.parentElement;
+          }
+          return depth;
+        };
+
+        const syncOpenDescendantHeights = (li) => {
+          if (!li) return;
+          Array.from(
+            li.querySelectorAll(
+              'li.sidebar-conference-node:not(.sidebar-conference-collapsed) > ul.sidebar-conference-content',
+            ),
+          )
+            .sort((a, b) => getElementDepth(b) - getElementDepth(a))
+            .forEach((ul) => {
+              ul.style.maxHeight = `${ul.scrollHeight}px`;
+              ul.style.opacity = '1';
+            });
+        };
+
+        const getConferenceContentHeight = (li) => {
+          if (!li) return 0;
+          syncOpenDescendantHeights(li);
+          const ul = li.querySelector(':scope > ul.sidebar-conference-content, :scope > ul');
+          return ul ? ul.scrollHeight : 0;
+        };
+
         const updateOpenAncestorHeights = (li) => {
           let parent = li ? li.parentElement : null;
           while (parent) {
@@ -1892,7 +1923,7 @@ window.$docsify = {
             if (!parentLi) break;
             if (!parentLi.classList.contains('sidebar-conference-collapsed')) {
               const ul = parentLi.querySelector(':scope > ul.sidebar-conference-content');
-              if (ul) ul.style.maxHeight = `${ul.scrollHeight}px`;
+              if (ul) ul.style.maxHeight = `${getConferenceContentHeight(parentLi)}px`;
             }
             parent = parentLi.parentElement;
           }
@@ -1907,7 +1938,7 @@ window.$docsify = {
 
           if (!doAnimate) {
             ul.style.transition = 'none';
-            ul.style.maxHeight = collapsed ? '0px' : `${ul.scrollHeight}px`;
+            ul.style.maxHeight = collapsed ? '0px' : `${getConferenceContentHeight(li)}px`;
             ul.style.opacity = collapsed ? '0' : '1';
             requestAnimationFrame(() => {
               ul.style.transition = '';
@@ -1917,23 +1948,28 @@ window.$docsify = {
           }
 
           if (collapsed) {
-            ul.style.maxHeight = `${ul.scrollHeight}px`;
+            ul.style.maxHeight = `${getConferenceContentHeight(li)}px`;
             ul.style.opacity = '0';
             requestAnimationFrame(() => {
               ul.style.maxHeight = '0px';
+              updateOpenAncestorHeights(li);
             });
           } else {
             ul.style.opacity = '1';
             ul.style.maxHeight = '0px';
             requestAnimationFrame(() => {
-              ul.style.maxHeight = `${ul.scrollHeight}px`;
+              ul.style.maxHeight = `${getConferenceContentHeight(li)}px`;
+              updateOpenAncestorHeights(li);
+              requestAnimationFrame(() => {
+                updateOpenAncestorHeights(li);
+              });
             });
           }
 
           setTimeout(() => {
             try {
               if (!li.classList.contains('sidebar-conference-collapsed')) {
-                ul.style.maxHeight = `${ul.scrollHeight}px`;
+                ul.style.maxHeight = `${getConferenceContentHeight(li)}px`;
               }
               updateOpenAncestorHeights(li);
               syncSidebarActiveIndicator({ animate: false });
@@ -2050,10 +2086,12 @@ window.$docsify = {
 
         requestAnimationFrame(() => {
           try {
-            nav
-              .querySelectorAll(
+            Array.from(
+              nav.querySelectorAll(
                 'li.sidebar-conference-node:not(.sidebar-conference-collapsed) > ul.sidebar-conference-content',
-              )
+              ),
+            )
+              .sort((a, b) => getElementDepth(b) - getElementDepth(a))
               .forEach((ul) => {
                 const prevTransition = ul.style.transition;
                 ul.style.transition = 'none';
