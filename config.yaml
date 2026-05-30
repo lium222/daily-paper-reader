@@ -79,6 +79,42 @@ subscriptions:
           source: manual
           note: ''
       updated_at: '2026-05-30T11:12:30.590Z'
+    - tag: MOO
+      description: 多目标优化论文检索
+      enabled: true
+      paper_sources:
+        - arxiv
+        - biorxiv
+      keywords:
+        - keyword: multi-objective optimization
+          keyword_cn: 多目标优化
+          query: multi-objective optimization
+        - keyword: Pareto front
+          keyword_cn: 帕累托前沿
+          query: Pareto front
+        - keyword: Pareto optimality
+          keyword_cn: 帕累托最优
+          query: Pareto optimality
+        - keyword: multi-objective evolutionary algorithm
+          keyword_cn: 多目标进化算法
+          query: multi-objective evolutionary algorithm
+      intent_queries:
+        - query: find papers on multi objective optimization
+          query_cn: 查找多目标优化相关论文
+          enabled: true
+          source: manual
+          note: ''
+        - query: research on Pareto optimality and trade offs
+          query_cn: 帕累托最优与权衡研究
+          enabled: true
+          source: manual
+          note: ''
+        - query: multi objective optimization algorithms and applications
+          query_cn: 多目标优化算法及应用
+          enabled: true
+          source: manual
+          note: ''
+      updated_at: '2026-05-30T11:20:58.119Z'
 source_backends:
   arxiv:
     papers_table: arxiv_papers
