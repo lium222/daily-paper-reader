@@ -25,3 +25,84 @@ subscriptions:
     stage: A
     diff_threshold_pct: 15
   keyword_recall_mode: or
+  intent_profiles:
+    - tag: df-defense
+      description: 请帮我查找DeepFake主动防御相关的论文
+      enabled: true
+      paper_sources:
+        - arxiv
+        - biorxiv
+      keywords:
+        - keyword: active defense deepfake
+          keyword_cn: 主动防御深度伪造
+          query: proactive defense against deepfakes
+        - keyword: adversarial attack defense
+          keyword_cn: 对抗攻击防御
+          query: defense against adversarial attacks on deepfake detectors
+        - keyword: generative adversarial network defense
+          keyword_cn: 生成对抗网络防御
+          query: using generative adversarial networks for defense against deepfakes
+      intent_queries:
+        - query: research papers on proactive defense methods against deepfakes
+          query_cn: 关于深度伪造主动防御方法的研究论文
+          enabled: true
+          source: manual
+          note: ''
+      updated_at: '2026-05-30T11:09:47.447Z'
+    - tag: df-active
+      description: 找出DeepFake主动取证相关的论文
+      enabled: true
+      paper_sources:
+        - arxiv
+        - biorxiv
+      keywords:
+        - keyword: DeepFake active detection
+          keyword_cn: 深度伪造检测
+          query: DeepFake detection techniques and methods
+        - keyword: DeepFake Active forensics
+          keyword_cn: 深度伪造主动取证
+          query: active forensic analysis of deepfakes
+      intent_queries:
+        - query: active deepfake forensic methods survey
+          query_cn: 主动深度伪造取证方法综述
+          enabled: true
+          source: manual
+          note: ''
+        - query: proactive deepfake detection approaches
+          query_cn: 主动深度伪造检测方法
+          enabled: true
+          source: manual
+          note: ''
+        - query: research on active forensics for synthetic media
+          query_cn: 合成媒体主动取证研究
+          enabled: true
+          source: manual
+          note: ''
+      updated_at: '2026-05-30T11:12:30.590Z'
+source_backends:
+  arxiv:
+    papers_table: arxiv_papers
+    use_vector_rpc: true
+    vector_rpc: match_arxiv_papers
+    vector_rpc_exact: match_arxiv_papers_exact
+    use_bm25_rpc: true
+    bm25_rpc: match_arxiv_papers_bm25
+    sync_table: arxiv_sync_status
+    sync_success_value: success
+    schema: public
+    kind: supabase
+    enabled: true
+    url: https://lyucdwgefyfbmaiopjbk.supabase.co
+    anon_key: sb_publishable_lX-oi64Uxyd7SIVv3_w2Uw_MTOojeKq
+  biorxiv:
+    papers_table: biorxiv_papers
+    use_vector_rpc: true
+    vector_rpc: match_biorxiv_papers_exact
+    vector_rpc_exact: match_biorxiv_papers_exact
+    use_bm25_rpc: true
+    bm25_rpc: match_biorxiv_papers_bm25
+    schema: public
+    kind: supabase
+    enabled: true
+    url: https://lyucdwgefyfbmaiopjbk.supabase.co
+    anon_key: sb_publishable_lX-oi64Uxyd7SIVv3_w2Uw_MTOojeKq
